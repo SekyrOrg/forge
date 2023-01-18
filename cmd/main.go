@@ -27,30 +27,32 @@ func main() {
 func Run(logger *zap.Logger, options *beaconforge.Args) error {
 	for _, filepath := range options.FilePaths {
 		if err := CreateBeacon(logger, options, filepath); err != nil {
+			if options.ContinueOnFailure {
+				logger.Warn(fmt.Sprintf("Error creating beacon for %s: %s", filepath, err))
+				continue
+			}
 			return fmt.Errorf("error creating beacon: %s", err)
 		}
 	}
 	return nil
 }
 
-func CreateBeacon(logger *zap.Logger, options *beaconforge.Args, filepath string) error {
-	logger.Info(fmt.Sprintf("Creating beacon for %s", filepath))
-	binary, err := os.OpenFile(filepath, os.O_RDWR, 0)
+func CreateBeacon(logger *zap.Logger, args *beaconforge.Args, filepath string) error {
+	logger.Info(fmt.Sprintf(`Creating beacon for "%s"`, filepath))
+	binary, err := os.Open(filepath)
 	if err != nil {
 		return fmt.Errorf("error opening file: %s", err)
 	}
 
-	//defer binary.Close()
-
-	urlPath := fmt.Sprintf(`/api/v1/upload?debug=%t&static=%t&upx=%t&upx_level=%d&connection_string=%s&os=%s&arch=%s&transport=%s`, options.BeacponOptions.Debug, options.BeacponOptions.StaticBinary, options.BeacponOptions.Upx, options.BeacponOptions.UpxLevel, options.BeacponOptions.ConnectionString, runtime.GOOS, runtime.GOARCH, options.BeacponOptions.Transport)
-	url := fmt.Sprintf("%s%s", options.Addr, urlPath)
-	logger.Debug(fmt.Sprintf("Uploading beacon to %s", url))
+	urlPath := fmt.Sprintf(`/api/v1/upload?debug=%t&static=%t&upx=%t&upx_level=%d&connection_string=%s&os=%s&arch=%s&transport=%s`, args.BeaconOptions.Debug, args.BeaconOptions.StaticBinary, args.BeaconOptions.Upx, args.BeaconOptions.UpxLevel, args.BeaconOptions.BeaconServerUrl, runtime.GOOS, runtime.GOARCH, args.BeaconOptions.Transport)
+	url := fmt.Sprintf("%s%s", args.BeaconCreatorUrl, urlPath)
+	logger.With(zap.String("url", url)).Debug("URL:")
 	response, err := http.Post(url, "application/octet-stream", binary)
 	if err != nil {
 		return err
 	}
-	//defer response.Body.Close()
-	logger.Debug(fmt.Sprintf("Response: %s", response.Status))
+	defer response.Body.Close()
+	logger.With(zap.Int("status", response.StatusCode)).Debug("Response:")
 	if response.StatusCode != 200 {
 		body, err := io.ReadAll(response.Body)
 		if err != nil {
@@ -58,14 +60,15 @@ func CreateBeacon(logger *zap.Logger, options *beaconforge.Args, filepath string
 		}
 		return fmt.Errorf("error uploading beacon, status: %s, body: %s", response.Status, body)
 	}
-	logger.Debug(fmt.Sprintf("Successfully created beacon for %s", filepath))
-	if _, err := binary.Seek(0, io.SeekStart); err != nil {
-		return fmt.Errorf("error seeking to beginning of file: %s", err)
+	originalBinary, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	if err != nil {
+		return fmt.Errorf("error opening file: %s", err)
 	}
-	if _, err := io.Copy(binary, response.Body); err != nil {
+
+	if _, err := io.Copy(originalBinary, response.Body); err != nil {
 		return fmt.Errorf("error copying response body to file: %s", err)
 	}
-	logger.Info(fmt.Sprintf("Successfully created beacon %s", filepath))
+	logger.Info(fmt.Sprintf(`Successfully created beacon "%s"`, filepath))
 	return nil
 }
 
