@@ -1,7 +1,7 @@
 package beaconforge
 
 import (
-	"github.com/SekyrOrg/beaconcreator"
+	"github.com/SekyrOrg/beaconcreator/builder"
 	"github.com/projectdiscovery/goflags"
 	"log"
 	"os"
@@ -14,7 +14,7 @@ type Args struct {
 	Verbose          bool
 	ConfigPath       string
 	OutputFolder     string
-	BeaconOpts       beaconcreator.Options
+	BeaconOpts       builder.Options
 }
 
 func ParseCLIArguments() *Args {
