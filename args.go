@@ -1,7 +1,7 @@
-package beaconforge
+package forge
 
 import (
-	"github.com/SekyrOrg/beaconcreator/builder"
+	"github.com/SekyrOrg/creator/builder"
 	"github.com/projectdiscovery/goflags"
 	"log"
 	"os"

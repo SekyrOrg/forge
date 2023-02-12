@@ -1,4 +1,4 @@
-package beaconforge
+package forge
 
 import (
 	"fmt"

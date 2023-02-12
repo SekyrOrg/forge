@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/SekyrOrg/beaconforge"
+	"github.com/SekyrOrg/forge"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
@@ -12,12 +12,12 @@ func main() {
 	zapLogger := CreateZapLogger()
 	defer zapLogger.Sync()
 
-	arguments := beaconforge.ParseCLIArguments()
+	arguments := forge.ParseCLIArguments()
 	zapLogger.
 		With(zap.Strings("files", arguments.FilePaths)).
 		Info("beaconForge Starting")
 
-	runner := beaconforge.NewRunner(zapLogger, arguments)
+	runner := forge.NewRunner(zapLogger, arguments)
 
 	if err := runner.Run(); err != nil {
 		zapLogger.Fatal(fmt.Sprintf("beaconForge encountered an error: %s", err))
