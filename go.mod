@@ -3,7 +3,7 @@ module github.com/SekyrOrg/forge
 go 1.19
 
 require (
-	github.com/SekyrOrg/creator v0.0.0-20230215074634-02946a69c83b
+	github.com/SekyrOrg/creator v0.0.0-20230215075259-0a4fd6103a94
 	github.com/projectdiscovery/goflags v0.1.6
 	github.com/sourcegraph/conc v0.2.0
 	github.com/stretchr/testify v1.8.1
@@ -25,7 +25,6 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.11.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
