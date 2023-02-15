@@ -48,17 +48,17 @@ func (r *Runner) CreateBinary(filePath *string) (TempBinary, error) {
 	r.logger.With(zap.String("file", *filePath)).Info("Creating binary")
 	response, err := r.sendBinary(*filePath)
 	if err != nil {
-		return TempBinary{}, fmt.Errorf("error sending binary: %r", err)
+		return TempBinary{}, fmt.Errorf("error sending binary: %w", err)
 	}
 	defer response.Close()
 	r.logger.With(zap.String("file", *filePath)).Debug("Creating temp file")
 	tempFilePath, err := os.CreateTemp(os.TempDir(), path.Base(*filePath))
 	if err != nil {
-		return TempBinary{}, fmt.Errorf("error creating temp file: %r", err)
+		return TempBinary{}, fmt.Errorf("error creating temp file: %w", err)
 	}
 	defer tempFilePath.Close()
 	if _, err = io.Copy(tempFilePath, response); err != nil {
-		return TempBinary{}, fmt.Errorf("error copying binary to temp file: %r", err)
+		return TempBinary{}, fmt.Errorf("error copying binary to temp file: %w", err)
 	}
 	return TempBinary{
 		filePath:     *filePath,
@@ -101,7 +101,7 @@ func (r *Runner) OverwriteBinary(file *TempBinary) {
 func (r *Runner) sendBinary(filepath string) (io.ReadCloser, error) {
 	binary, err := os.Open(filepath)
 	if err != nil {
-		return nil, fmt.Errorf("error opening file: %r", err)
+		return nil, fmt.Errorf("error opening file: %w", err)
 	}
 	defer binary.Close()
 

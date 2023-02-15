@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/SekyrOrg/forge"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -20,7 +19,7 @@ func main() {
 	runner := forge.NewRunner(zapLogger, arguments)
 
 	if err := runner.Run(); err != nil {
-		zapLogger.Fatal(fmt.Sprintf("beaconForge encountered an error: %s", err))
+		zapLogger.Fatal("beaconForge encountered an error", zap.Error(err))
 	}
 }
 

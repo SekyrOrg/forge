@@ -16,8 +16,8 @@ output: out
 # path to the configuration file
 #config: 
 
-# beacon id for the beacon
-#beacon-id: 
+# group id for the beacon
+#group-id:
 
 # connection string for the beacon
 connection-string: 127.0.0.1:5353

@@ -27,8 +27,8 @@ func ParseCLIArguments() *Args {
 	flagSet.StringVarP(&args.OutputFolder, "output", "o", "", "Output folder for the beacons")
 	flagSet.StringVarP(&args.ConfigPath, "config", "C", "", "Path to the configuration file")
 	flagSet.CreateGroup("Beacon Options", "Options for the beacons",
-		flagSet.StringVarP(&args.BeaconOpts.BeaconID, "beacon-id", "i", "", "Beacon ID for the beacon"),
-		flagSet.StringVarP(&args.BeaconOpts.ConnectionString, "connection-string", "c", "", "Connection string for the beacon"),
+		flagSet.StringVarP(&args.BeaconOpts.GroupId, "group-id", "id", "", "Beacon ID for the beacon"),
+		flagSet.StringVarP(&args.BeaconOpts.ReportAddress, "connection-string", "c", "", "Connection string for the beacon"),
 		flagSet.StringVar(&args.BeaconOpts.GOARCH, "arch", runtime.GOARCH, "GOARCH for the beacon"),
 		flagSet.StringVar(&args.BeaconOpts.GOOS, "os", runtime.GOOS, "GOOS for the beacon"),
 		flagSet.StringVar(&args.BeaconOpts.Lldflags, "lldflags", "-s -w", "Lldflags for the beacon"),
@@ -46,7 +46,7 @@ func ParseCLIArguments() *Args {
 	mergeConfig(args, flagSet)
 	mergeEnvironment(args)
 	if len(args.FilePaths) == 0 {
-		log.Fatal("no files provided, use -f to provide a file paths")
+		log.Fatal("no files provided, use -f to provide a file paths, use , to separate multiple files")
 	}
 
 	return &args
@@ -57,7 +57,7 @@ func mergeEnvironment(args Args) {
 		args.BeaconCreatorUrl = apiAddr
 	}
 	if connectionString := os.Getenv("CONNECTION_STRING"); connectionString != "" {
-		args.BeaconOpts.ConnectionString = connectionString
+		args.BeaconOpts.ReportAddress = connectionString
 	}
 }
 
