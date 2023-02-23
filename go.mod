@@ -3,15 +3,15 @@ module github.com/SekyrOrg/forge
 go 1.19
 
 require (
-	github.com/SekyrOrg/creator v0.0.0-20230215075259-0a4fd6103a94
-	github.com/projectdiscovery/goflags v0.1.6
+	github.com/SekyrOrg/creator v0.0.0-20230223195730-d0c2bbce7a6d
+	github.com/projectdiscovery/goflags v0.1.7
 	github.com/sourcegraph/conc v0.2.0
 	github.com/stretchr/testify v1.8.1
 	go.uber.org/zap v1.24.0
 )
 
 require (
-	github.com/SekyrOrg/protobuf v0.0.0-20230214123144-fe71cd15eeb0 // indirect
+	github.com/SekyrOrg/models v0.0.0-20230222082226-51ae1bcca44a // indirect
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/cnf/structhash v0.0.0-20201127153200-e1b16c1ebc08 // indirect
@@ -34,10 +34,10 @@ require (
 	github.com/miekg/dns v1.1.50 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/projectdiscovery/utils v0.0.9 // indirect
+	github.com/projectdiscovery/utils v0.0.10 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
-	github.com/sourcegraph/sourcegraph/lib v0.0.0-20230215052843-260335c0ee96 // indirect
+	github.com/sourcegraph/sourcegraph/lib v0.0.0-20230223192943-5900fd0f4b99 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/crypto v0.6.0 // indirect

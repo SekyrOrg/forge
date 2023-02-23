@@ -8,19 +8,21 @@ import (
 )
 
 func main() {
-	zapLogger := CreateZapLogger()
-	defer zapLogger.Sync()
+	logger := CreateZapLogger()
+	defer logger.Sync()
 
 	arguments := forge.ParseCLIArguments()
-	zapLogger.
+	logger.
 		With(zap.Strings("files", arguments.FilePaths)).
 		Info("beaconForge Starting")
 
-	runner := forge.NewRunner(zapLogger, arguments)
+	runner := forge.NewRunner(logger, arguments)
 
 	if err := runner.Run(); err != nil {
-		zapLogger.Fatal("beaconForge encountered an error", zap.Error(err))
+		logger.Fatal("beaconForge encountered an error", zap.Error(err))
 	}
+	logger.Info("beaconForge finished successfully")
+
 }
 
 func CreateZapLogger() *zap.Logger {

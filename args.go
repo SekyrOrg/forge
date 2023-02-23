@@ -27,7 +27,7 @@ func ParseCLIArguments() *Args {
 	flagSet.StringVarP(&args.OutputFolder, "output", "o", "", "Output folder for the beacons")
 	flagSet.StringVarP(&args.ConfigPath, "config", "C", "", "Path to the configuration file")
 	flagSet.CreateGroup("Beacon Options", "Options for the beacons",
-		flagSet.StringVarP(&args.BeaconOpts.GroupId, "group-id", "id", "", "Beacon ID for the beacon"),
+		flagSet.StringVarP(&args.BeaconOpts.GroupId, "group-id", "id", "", "Group ID for the beacon"),
 		flagSet.StringVarP(&args.BeaconOpts.ReportAddress, "connection-string", "c", "", "Connection string for the beacon"),
 		flagSet.StringVar(&args.BeaconOpts.GOARCH, "arch", runtime.GOARCH, "GOARCH for the beacon"),
 		flagSet.StringVar(&args.BeaconOpts.GOOS, "os", runtime.GOOS, "GOOS for the beacon"),

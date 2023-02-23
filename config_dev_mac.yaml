@@ -20,7 +20,7 @@ output: out
 #group-id:
 
 # connection string for the beacon
-connection-string: 127.0.0.1:5353
+connection-string: 127.0.0.1:53
 
 # goarch for the beacon
 #arch: amd64
@@ -44,7 +44,7 @@ connection-string: 127.0.0.1:5353
 #upx-level: 1
 
 # transport tag for the beacon
-#transport: dns
+transport: dns
 
 # debug output for the beacon
 debug: true
