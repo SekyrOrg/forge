@@ -1,7 +1,8 @@
 package forge
 
 import (
-	"github.com/SekyrOrg/creator/builder"
+	"github.com/SekyrOrg/forge/openapi"
+	"github.com/google/uuid"
 	"github.com/projectdiscovery/goflags"
 	"log"
 	"os"
@@ -14,7 +15,7 @@ type Args struct {
 	Verbose          bool
 	ConfigPath       string
 	OutputFolder     string
-	BeaconOpts       builder.Options
+	BeaconOpts       beaconOptions
 }
 
 func ParseCLIArguments() *Args {
@@ -28,15 +29,15 @@ func ParseCLIArguments() *Args {
 	flagSet.StringVarP(&args.ConfigPath, "config", "C", "", "Path to the configuration file")
 	flagSet.CreateGroup("Beacon Options", "Options for the beacons",
 		flagSet.StringVarP(&args.BeaconOpts.GroupId, "group-id", "id", "", "Group ID for the beacon"),
-		flagSet.StringVarP(&args.BeaconOpts.ReportAddress, "connection-string", "c", "", "Connection string for the beacon"),
-		flagSet.StringVar(&args.BeaconOpts.GOARCH, "arch", runtime.GOARCH, "GOARCH for the beacon"),
-		flagSet.StringVar(&args.BeaconOpts.GOOS, "os", runtime.GOOS, "GOOS for the beacon"),
+		flagSet.StringVarP(&args.BeaconOpts.ReportAddr, "connection-string", "c", "", "Connection string for the beacon"),
+		flagSet.StringVar(&args.BeaconOpts.Arch, "arch", runtime.GOARCH, "GOARCH for the beacon"),
+		flagSet.StringVar(&args.BeaconOpts.Os, "os", runtime.GOOS, "GOOS for the beacon"),
 		flagSet.StringVar(&args.BeaconOpts.Lldflags, "lldflags", "-s -w", "Lldflags for the beacon"),
-		flagSet.BoolVar(&args.BeaconOpts.StaticBinary, "static", false, "Static binary for the beacon"),
+		flagSet.BoolVar(&args.BeaconOpts.Static, "static", false, "Static binary for the beacon"),
 		flagSet.BoolVar(&args.BeaconOpts.Gzip, "gzip", true, "Gzip the beacon"),
 		flagSet.BoolVar(&args.BeaconOpts.Upx, "upx", false, "Upx the beacon"),
 		flagSet.IntVar(&args.BeaconOpts.UpxLevel, "upx-level", 1, "Upx level for the beacon"),
-		flagSet.StringVar(&args.BeaconOpts.TransportTag, "transport", "dns", "Transport tag for the beacon"),
+		flagSet.StringVar(&args.BeaconOpts.Transport, "transport", "dns", "Transport tag for the beacon"),
 		flagSet.BoolVarP(&args.BeaconOpts.Debug, "debug", "D", false, "Enable debug output for the beacon"),
 	)
 	if err := flagSet.Parse(); err != nil {
@@ -56,8 +57,8 @@ func mergeEnvironment(args Args) {
 	if apiAddr := os.Getenv("BEACON_CREATOR_ADDR"); apiAddr != "" {
 		args.BeaconCreatorUrl = apiAddr
 	}
-	if connectionString := os.Getenv("CONNECTION_STRING"); connectionString != "" {
-		args.BeaconOpts.ReportAddress = connectionString
+	if connectionString := os.Getenv("REPORT_ADDR"); connectionString != "" {
+		args.BeaconOpts.ReportAddr = connectionString
 	}
 }
 
@@ -73,4 +74,63 @@ func mergeConfig(args Args, flagSet *goflags.FlagSet) {
 	if err := flagSet.MergeConfigFile(args.ConfigPath); err != nil {
 		log.Fatalln("error merging config file: ", err)
 	}
+}
+
+type beaconOptions struct {
+	ReportAddr string
+	Os         string
+	Arch       string
+	BeaconId   string
+	GroupId    string
+	Static     bool
+	Upx        bool
+	UpxLevel   int
+	Gzip       bool
+	Debug      bool
+	Lldflags   string
+	Transport  string
+}
+
+func (b *beaconOptions) toPostCreatorParams() *openapi.PostCreatorParams {
+	params := openapi.PostCreatorParams{
+		ReportAddr: b.ReportAddr,
+		Os:         b.Os,
+		Arch:       b.Arch,
+	}
+	if b.BeaconId != "" {
+		beaconId, err := uuid.Parse(b.BeaconId)
+		if err != nil {
+			log.Fatal(err)
+		}
+		params.BeaconId = &beaconId
+	}
+	if b.GroupId != "" {
+		groupId, err := uuid.Parse(b.GroupId)
+		if err != nil {
+			log.Fatal(err)
+		}
+		params.GroupId = &groupId
+	}
+	if b.Static {
+		params.Static = &b.Static
+	}
+	if b.Upx {
+		params.Upx = &b.Upx
+	}
+	if b.UpxLevel != 0 {
+		params.UpxLevel = &b.UpxLevel
+	}
+	if b.Gzip {
+		params.Gzip = &b.Gzip
+	}
+	if b.Debug {
+		params.Debug = &b.Debug
+	}
+	if b.Lldflags != "" {
+		params.Lldflags = &b.Lldflags
+	}
+	if b.Transport != "" {
+		params.Transport = &b.Transport
+	}
+	return &params
 }

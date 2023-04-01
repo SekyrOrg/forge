@@ -16,7 +16,10 @@ func main() {
 		With(zap.Strings("files", arguments.FilePaths)).
 		Info("beaconForge Starting")
 
-	runner := forge.NewRunner(logger, arguments)
+	runner, err := forge.NewRunner(logger, arguments)
+	if err != nil {
+		logger.Fatal("error creating runner", zap.Error(err))
+	}
 
 	if err := runner.Run(); err != nil {
 		logger.Fatal("beaconForge encountered an error", zap.Error(err))

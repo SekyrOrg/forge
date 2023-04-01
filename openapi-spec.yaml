@@ -1,0 +1,214 @@
+openapi: 3.0.0
+info:
+  title: Beacon API
+  description: Example API for managing beacons
+  version: 1.0.0
+paths:
+  /distlist:
+    get:
+      summary: List all supported OS and Arch combinations
+      tags:
+        - distlist
+      responses:
+        '200':
+          description: A list of supported OS and Arch combinations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Dist'
+  /creator:
+    post:
+      summary: Create a new beacon.
+      tags:
+        - creator
+      parameters:
+            - $ref: '#/components/parameters/ReportAddr'
+            - $ref: '#/components/parameters/OS'
+            - $ref: '#/components/parameters/Arch'
+            - $ref: '#/components/parameters/BeaconId'
+            - $ref: '#/components/parameters/GroupId'
+            - $ref: '#/components/parameters/Static'
+            - $ref: '#/components/parameters/Upx'
+            - $ref: '#/components/parameters/UpxLevel'
+            - $ref: '#/components/parameters/Gzip'
+            - $ref: '#/components/parameters/Debug'
+            - $ref: '#/components/parameters/Lldflags'
+            - $ref: '#/components/parameters/Transport'
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: a beacon created from the submitted binary
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /healthz:
+    get:
+      summary: Check the health of the server.
+      tags:
+        - healthz
+      responses:
+        '200':
+          description: The server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    default: Healthy
+                    example: Healthy
+        '500':
+          description: The server is not healthy
+
+components:
+  parameters:
+    ReportAddr:
+      name: report_addr
+      in: query
+      description: The URL of the report server.
+      required: true
+      schema:
+        type: string
+        example: http://example.com/report
+    OS:
+      name: os
+      in: query
+      description: The operating system of the beacon.
+      required: true
+      schema:
+        type: string
+        example: Windows
+    Arch:
+      name: arch
+      in: query
+      description: The architecture of the beacon.
+      required: true
+      schema:
+        type: string
+        example: x86_64
+    BeaconId:
+      name: beacon_id
+      in: query
+      description: The UUID of the beacon.
+      schema:
+        type: string
+        format: uuid
+        example: "123e4567-e89b-12d3-a456-426655440000"
+    GroupId:
+      name: group_id
+      in: query
+      description: The UUID of the group.
+      schema:
+        type: string
+        format: uuid
+        example: "123e4567-e89b-12d3-a456-426655440000"
+    Static:
+      name: static
+      in: query
+      description: Indicates if the beacon is static.
+      schema:
+        type: boolean
+        default: false
+        example: true
+    Upx:
+      name: upx
+      in: query
+      description: Indicates if the beacon is compressed using UPX.
+      schema:
+        type: boolean
+        default: false
+        example: true
+    UpxLevel:
+      name: upx_level
+      in: query
+      description: The compression level used by UPX.
+      schema:
+        type: integer
+        default: 1
+        example: 9
+    Gzip:
+      name: gzip
+      in: query
+      description: Indicates if the beacon is compressed using Gzip.
+      schema:
+        type: boolean
+        default: true
+        example: true
+    Debug:
+      name: debug
+      in: query
+      description:  Include debug information in the beacon
+      schema:
+        type: boolean
+        default: true
+        example: true
+    Transport:
+      name: transport
+      in: query
+      description: The transport protocol used by the beacon.
+      schema:
+        type: string
+        default: dns
+        example: http
+    Lldflags:
+      name: lldflags
+      in: query
+      description: The lldflags used to build the beacon.
+      schema:
+        type: string
+        default: -s -w
+        example: http
+  responses:
+    ForbiddenError:
+      description: You are not authorized to access this resource
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                default: Forbidden
+                example: Forbidden
+              message:
+                type: string
+                default: You are not authorized to access this resource
+                example: You are not authorized to access this resource
+    NotFoundError:
+      description: The requested resource was not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                default: Not Found
+                example: Not Found
+              message:
+                type: string
+                default: The requested resource was not found
+                example: The requested resource was not found
+  schemas:
+    Dist:
+      type: object
+      properties:
+        os:
+          type: string
+          example: Windows
+        arch:
+          type: string
+          example: x86_64

@@ -1,13 +1,16 @@
 package forge
 
 import (
+	"context"
 	"fmt"
+	"github.com/SekyrOrg/forge/openapi"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
 	"github.com/sourcegraph/conc/iter"
 	"go.uber.org/zap"
 	"io"
-	"net/http"
 	url2 "net/url"
 	"os"
+
 	"path"
 )
 
@@ -19,13 +22,19 @@ type TempBinary struct {
 type Runner struct {
 	logger *zap.Logger
 	args   *Args
+	client *openapi.Client
 }
 
-func NewRunner(logger *zap.Logger, args *Args) *Runner {
+func NewRunner(logger *zap.Logger, args *Args) (*Runner, error) {
+	client, err := openapi.NewClient(args.BeaconCreatorUrl)
+	if err != nil {
+		return nil, fmt.Errorf("error creating client: %w", err)
+	}
 	return &Runner{
 		logger: logger,
 		args:   args,
-	}
+		client: client,
+	}, nil
 }
 
 func (r *Runner) Run() error {
@@ -105,14 +114,9 @@ func (r *Runner) sendBinary(filepath string) (io.ReadCloser, error) {
 	}
 	defer binary.Close()
 
-	beaconCreatorUrl, err := CreateURL(r.args)
+	response, err := r.client.PostCreatorWithBody(context.Background(), r.args.BeaconOpts.toPostCreatorParams(), "application/octet-stream", binary)
 	if err != nil {
-		return nil, fmt.Errorf("error creating url: %w", err)
-	}
-	r.logger.With(zap.String("url", beaconCreatorUrl)).Debug("Sending binary")
-	response, err := http.Post(beaconCreatorUrl, "application/octet-stream", binary)
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error sending binary: %w", err)
 	}
 	if response.StatusCode != 200 {
 		body, err := io.ReadAll(response.Body)
@@ -121,21 +125,22 @@ func (r *Runner) sendBinary(filepath string) (io.ReadCloser, error) {
 		}
 		return nil, fmt.Errorf("error uploading beacon, status: %s, body: %s", response.Status, string(body))
 	}
-	r.logger.With(zap.String("url", beaconCreatorUrl)).Debug("Binary sent")
+	r.logger.With(zap.String("file", filepath)).Debug("Successfully created binary")
 	return response.Body, nil
 }
 
 // CreateURL creates the url to send the binary to the beaconCreator
 func CreateURL(args *Args) (string, error) {
-	u, err := url2.Parse(args.BeaconCreatorUrl + "/api/v1/upload")
+	u, err := url2.Parse(args.BeaconCreatorUrl + "/creator")
 	if err != nil {
 		return "", fmt.Errorf("error creating url: %w", err)
 	}
-	values, err := args.BeaconOpts.ToUrlQuery()
+	// marshal the beacon options to query params
+	q, err := runtime.MarshalForm(args.BeaconOpts.toPostCreatorParams(), nil)
 	if err != nil {
-		return "", fmt.Errorf("error creating url: %w", err)
+		return "", fmt.Errorf("error marshalling beacon options: %w", err)
 	}
-	u.RawQuery = values.Encode()
+	u.RawQuery = q.Encode()
 
 	return u.String(), nil
 }
