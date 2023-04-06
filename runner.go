@@ -41,7 +41,7 @@ func (r *Runner) Run() error {
 	r.logger.With(zap.Any("arguments", r.args)).Debug("Starting Runner")
 	binaryFiles, err := iter.MapErr(r.args.FilePaths, r.CreateBinary)
 	if err != nil {
-		return fmt.Errorf("error creating temp binary: %s", err)
+		return fmt.Errorf("error creating temp binary, file: %s, error: %s", r.args.FilePaths, err)
 	}
 	defer iter.ForEach(binaryFiles, func(file *TempBinary) {
 		os.Remove(file.tempFilePath)

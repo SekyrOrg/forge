@@ -22,7 +22,7 @@ func ParseCLIArguments() *Args {
 	var args Args
 	flagSet := goflags.NewFlagSet()
 	flagSet.SetDescription(`BeaconForge is a tool for generating beacons from file paths.`)
-	flagSet.StringVarP(&args.BeaconCreatorUrl, "addr", "a", "http://127.0.0.1:8080", "Address of the beaconCreator server")
+	flagSet.StringVarP(&args.BeaconCreatorUrl, "addr", "a", "http://127.0.0.1:9000", "Address of the beaconCreator server")
 	flagSet.StringSliceVarP((*goflags.StringSlice)(&args.FilePaths), "files", "f", []string{}, "File path for binaries to convert into beacon", goflags.StringSliceOptions)
 	flagSet.BoolVarP(&args.Verbose, "verbose", "v", false, "Enable verbose output")
 	flagSet.StringVarP(&args.OutputFolder, "output", "o", "", "Output folder for the beacons")
