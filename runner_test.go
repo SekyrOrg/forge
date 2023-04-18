@@ -23,7 +23,7 @@ func TestRunner_sendBinary(t *testing.T) {
 	assert.NoError(t, err)
 
 	t.Run("Runner_sendBinary works", func(t *testing.T) {
-		runner := Runner{logger: logger, args: &Args{BeaconCreatorUrl: testServer.URL}}
+		runner := Runner{logger: logger, args: &Args{CreatorUrl: testServer.URL}}
 		testFile := createAndWriteTempFile(t, "test")
 		defer os.Remove(testFile)
 
@@ -47,7 +47,7 @@ func TestRunner_CreateBinary(t *testing.T) {
 	assert.NoError(t, err)
 
 	t.Run("Runner_CreateBinary works", func(t *testing.T) {
-		runner := Runner{logger: logger, args: &Args{BeaconCreatorUrl: testServer.URL}}
+		runner := Runner{logger: logger, args: &Args{CreatorUrl: testServer.URL}}
 		testFile := createAndWriteTempFile(t, "test")
 		defer os.Remove(testFile)
 
@@ -61,7 +61,7 @@ func TestRunner_CreateBinary(t *testing.T) {
 
 	})
 	t.Run("Runner_CreateBinary tempfile contains the content sent from testServer", func(t *testing.T) {
-		runner := Runner{logger: logger, args: &Args{BeaconCreatorUrl: testServer.URL}}
+		runner := Runner{logger: logger, args: &Args{CreatorUrl: testServer.URL}}
 		testFile := createAndWriteTempFile(t, "test")
 		defer os.Remove(testFile)
 
@@ -173,7 +173,7 @@ func TestRunner_Run(t *testing.T) {
 		defer os.Remove(tempFile1)
 		tempFile2 := createAndWriteTempFile(t, "temp2")
 		defer os.Remove(tempFile2)
-		runner := Runner{logger: logger, args: &Args{BeaconCreatorUrl: testServer.URL, FilePaths: []string{tempFile1, tempFile2}}}
+		runner := Runner{logger: logger, args: &Args{CreatorUrl: testServer.URL, FilePaths: []string{tempFile1, tempFile2}}}
 		err := runner.Run()
 		assert.NoError(t, err, "error should be nil")
 		assert.FileExists(t, tempFile1, "tempFile1 should be a file")

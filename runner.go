@@ -4,11 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/SekyrOrg/forge/openapi"
-	"github.com/deepmap/oapi-codegen/pkg/runtime"
 	"github.com/sourcegraph/conc/iter"
 	"go.uber.org/zap"
 	"io"
-	url2 "net/url"
+	"net/http"
 	"os"
 
 	"path"
@@ -26,7 +25,7 @@ type Runner struct {
 }
 
 func NewRunner(logger *zap.Logger, args *Args) (*Runner, error) {
-	client, err := openapi.NewClient(args.BeaconCreatorUrl)
+	client, err := openapi.NewClient(args.CreatorUrl)
 	if err != nil {
 		return nil, fmt.Errorf("error creating client: %w", err)
 	}
@@ -55,23 +54,31 @@ func (r *Runner) Run() error {
 // Returns the path to the temporary file and the path to the original file
 func (r *Runner) CreateBinary(filePath *string) (TempBinary, error) {
 	r.logger.With(zap.String("file", *filePath)).Info("Creating binary")
-	response, err := r.sendBinary(*filePath)
+	responseBody, err := r.sendBinary(*filePath)
 	if err != nil {
 		return TempBinary{}, fmt.Errorf("error sending binary: %w", err)
 	}
-	defer response.Close()
+	defer responseBody.Close()
+
+	return r.createTempBinaryFile(filePath, responseBody)
+}
+
+// createTempBinaryFile creates a temporary file from the given response body
+func (r *Runner) createTempBinaryFile(filePath *string, responseBody io.Reader) (TempBinary, error) {
 	r.logger.With(zap.String("file", *filePath)).Debug("Creating temp file")
-	tempFilePath, err := os.CreateTemp(os.TempDir(), path.Base(*filePath))
+	tempFile, err := os.CreateTemp(os.TempDir(), path.Base(*filePath))
 	if err != nil {
 		return TempBinary{}, fmt.Errorf("error creating temp file: %w", err)
 	}
-	defer tempFilePath.Close()
-	if _, err = io.Copy(tempFilePath, response); err != nil {
+	defer tempFile.Close()
+
+	if _, err = io.Copy(tempFile, responseBody); err != nil {
 		return TempBinary{}, fmt.Errorf("error copying binary to temp file: %w", err)
 	}
+
 	return TempBinary{
 		filePath:     *filePath,
-		tempFilePath: tempFilePath.Name(),
+		tempFilePath: tempFile.Name(),
 	}, nil
 }
 
@@ -88,22 +95,27 @@ func (r *Runner) OverwriteBinary(file *TempBinary) {
 	}
 	defer tempFile.Close()
 
-	// If the user specified an output folder, use that instead of replacing the original file
-	if r.args.OutputFolder != "" {
-		if err := os.MkdirAll(r.args.OutputFolder, 0755); err != nil {
-			r.logger.Fatal(fmt.Sprintf("error creating output folder: %r", err))
-		}
-		file.filePath = fmt.Sprintf("%s/%s", r.args.OutputFolder, path.Base(file.filePath))
-	}
-
-	destinationFile, err := os.OpenFile(file.filePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	destinationFilePath := r.getDestinationFilePath(file)
+	destinationFile, err := os.OpenFile(destinationFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
 		r.logger.Fatal(fmt.Sprintf("error opening original file: %r", err))
 	}
 	defer destinationFile.Close()
+
 	if _, err = io.Copy(destinationFile, tempFile); err != nil {
 		r.logger.Fatal(fmt.Sprintf("error copying temp file to original file: %r", err))
 	}
+}
+
+// getDestinationFilePath returns the path for the destination file, based on user-specified output folder
+func (r *Runner) getDestinationFilePath(file *TempBinary) string {
+	if r.args.OutputFolder != "" {
+		if err := os.MkdirAll(r.args.OutputFolder, 0755); err != nil {
+			r.logger.Fatal(fmt.Sprintf("error creating output folder: %r", err))
+		}
+		return fmt.Sprintf("%s/%s", r.args.OutputFolder, path.Base(file.filePath))
+	}
+	return file.filePath
 }
 
 // sendBinary sends the binary to the beaconCreator and returns the response body
@@ -118,6 +130,12 @@ func (r *Runner) sendBinary(filepath string) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error sending binary: %w", err)
 	}
+
+	return r.checkResponseStatus(response)
+}
+
+// checkResponseStatus checks the response status and returns the response body if successful
+func (r *Runner) checkResponseStatus(response *http.Response) (io.ReadCloser, error) {
 	if response.StatusCode != 200 {
 		body, err := io.ReadAll(response.Body)
 		if err != nil {
@@ -125,22 +143,6 @@ func (r *Runner) sendBinary(filepath string) (io.ReadCloser, error) {
 		}
 		return nil, fmt.Errorf("error uploading beacon, status: %s, body: %s", response.Status, string(body))
 	}
-	r.logger.With(zap.String("file", filepath)).Debug("Successfully created binary")
+	r.logger.Debug("Successfully created binary")
 	return response.Body, nil
-}
-
-// CreateURL creates the url to send the binary to the beaconCreator
-func CreateURL(args *Args) (string, error) {
-	u, err := url2.Parse(args.BeaconCreatorUrl + "/creator")
-	if err != nil {
-		return "", fmt.Errorf("error creating url: %w", err)
-	}
-	// marshal the beacon options to query params
-	q, err := runtime.MarshalForm(args.BeaconOpts.toPostCreatorParams(), nil)
-	if err != nil {
-		return "", fmt.Errorf("error marshalling beacon options: %w", err)
-	}
-	u.RawQuery = q.Encode()
-
-	return u.String(), nil
 }

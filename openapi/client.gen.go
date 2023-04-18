@@ -16,17 +16,33 @@ import (
 	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
 )
 
+const (
+	BearerAuthScopes = "bearerAuth.Scopes"
+)
+
+// Dist defines model for Dist.
+type Dist struct {
+	Arch *string `json:"arch,omitempty"`
+	Os   *string `json:"os,omitempty"`
+}
+
+// ErrorMsg defines model for ErrorMsg.
+type ErrorMsg struct {
+	// Code A unique error code for the specific type of error
+	Code string `json:"code"`
+
+	// Message A human-readable error message describing the error
+	Message string `json:"message"`
+}
+
 // Arch defines model for Arch.
 type Arch = string
-
-// BeaconId defines model for BeaconId.
-type BeaconId = openapi_types.UUID
 
 // Debug defines model for Debug.
 type Debug = bool
 
-// GroupId defines model for GroupId.
-type GroupId = openapi_types.UUID
+// GroupUUID defines model for GroupUUID.
+type GroupUUID = openapi_types.UUID
 
 // Gzip defines model for Gzip.
 type Gzip = bool
@@ -52,11 +68,8 @@ type Upx = bool
 // UpxLevel defines model for UpxLevel.
 type UpxLevel = int
 
-// ForbiddenError defines model for ForbiddenError.
-type ForbiddenError struct {
-	Error   *string `json:"error,omitempty"`
-	Message *string `json:"message,omitempty"`
-}
+// Error defines model for Error.
+type Error = ErrorMsg
 
 // PostCreatorParams defines parameters for PostCreator.
 type PostCreatorParams struct {
@@ -69,11 +82,8 @@ type PostCreatorParams struct {
 	// Arch The architecture of the beacon.
 	Arch Arch `form:"arch" json:"arch"`
 
-	// BeaconId The UUID of the beacon.
-	BeaconId *BeaconId `form:"beacon_id,omitempty" json:"beacon_id,omitempty"`
-
-	// GroupId The UUID of the group.
-	GroupId *GroupId `form:"group_id,omitempty" json:"group_id,omitempty"`
+	// GroupUuid The UUID of the group.
+	GroupUuid *GroupUUID `form:"group_uuid,omitempty" json:"group_uuid,omitempty"`
 
 	// Static Indicates if the beacon is static.
 	Static *Static `form:"static,omitempty" json:"static,omitempty"`
@@ -172,10 +182,25 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 type ClientInterface interface {
 	// PostCreator request with any body
 	PostCreatorWithBody(ctx context.Context, params *PostCreatorParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetCreatorDistlist request
+	GetCreatorDistlist(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) PostCreatorWithBody(ctx context.Context, params *PostCreatorParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPostCreatorRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetCreatorDistlist(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetCreatorDistlistRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -243,25 +268,9 @@ func NewPostCreatorRequestWithBody(server string, params *PostCreatorParams, con
 		}
 	}
 
-	if params.BeaconId != nil {
+	if params.GroupUuid != nil {
 
-		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "beacon_id", runtime.ParamLocationQuery, *params.BeaconId); err != nil {
-			return nil, err
-		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-			return nil, err
-		} else {
-			for k, v := range parsed {
-				for _, v2 := range v {
-					queryValues.Add(k, v2)
-				}
-			}
-		}
-
-	}
-
-	if params.GroupId != nil {
-
-		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "group_id", runtime.ParamLocationQuery, *params.GroupId); err != nil {
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "group_uuid", runtime.ParamLocationQuery, *params.GroupUuid); err != nil {
 			return nil, err
 		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 			return nil, err
@@ -399,6 +408,33 @@ func NewPostCreatorRequestWithBody(server string, params *PostCreatorParams, con
 	return req, nil
 }
 
+// NewGetCreatorDistlistRequest generates requests for GetCreatorDistlist
+func NewGetCreatorDistlistRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/creator/distlist")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -444,15 +480,15 @@ func WithBaseURL(baseURL string) ClientOption {
 type ClientWithResponsesInterface interface {
 	// PostCreator request with any body
 	PostCreatorWithBodyWithResponse(ctx context.Context, params *PostCreatorParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostCreatorResponse, error)
+
+	// GetCreatorDistlist request
+	GetCreatorDistlistWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCreatorDistlistResponse, error)
 }
 
 type PostCreatorResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON403      *struct {
-		Error   *string `json:"error,omitempty"`
-		Message *string `json:"message,omitempty"`
-	}
+	JSONDefault  *ErrorMsg
 }
 
 // Status returns HTTPResponse.Status
@@ -471,6 +507,29 @@ func (r PostCreatorResponse) StatusCode() int {
 	return 0
 }
 
+type GetCreatorDistlistResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]Dist
+	JSONDefault  *ErrorMsg
+}
+
+// Status returns HTTPResponse.Status
+func (r GetCreatorDistlistResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetCreatorDistlistResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // PostCreatorWithBodyWithResponse request with arbitrary body returning *PostCreatorResponse
 func (c *ClientWithResponses) PostCreatorWithBodyWithResponse(ctx context.Context, params *PostCreatorParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostCreatorResponse, error) {
 	rsp, err := c.PostCreatorWithBody(ctx, params, contentType, body, reqEditors...)
@@ -478,6 +537,15 @@ func (c *ClientWithResponses) PostCreatorWithBodyWithResponse(ctx context.Contex
 		return nil, err
 	}
 	return ParsePostCreatorResponse(rsp)
+}
+
+// GetCreatorDistlistWithResponse request returning *GetCreatorDistlistResponse
+func (c *ClientWithResponses) GetCreatorDistlistWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCreatorDistlistResponse, error) {
+	rsp, err := c.GetCreatorDistlist(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetCreatorDistlistResponse(rsp)
 }
 
 // ParsePostCreatorResponse parses an HTTP response from a PostCreatorWithResponse call
@@ -494,15 +562,45 @@ func ParsePostCreatorResponse(rsp *http.Response) (*PostCreatorResponse, error) 
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest struct {
-			Error   *string `json:"error,omitempty"`
-			Message *string `json:"message,omitempty"`
-		}
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorMsg
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON403 = &dest
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetCreatorDistlistResponse parses an HTTP response from a GetCreatorDistlistWithResponse call
+func ParseGetCreatorDistlistResponse(rsp *http.Response) (*GetCreatorDistlistResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetCreatorDistlistResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []Dist
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorMsg
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 

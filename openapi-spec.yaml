@@ -3,12 +3,19 @@ info:
   title: Beacon API
   description: Example API for managing beacons
   version: 1.0.0
+tags:
+  - name: Creator
+    description: API for creating beacons
+  - name: Health
+    description: API for checking server health
 paths:
-  /distlist:
+  /creator/distlist:
     get:
       summary: List all supported OS and Arch combinations
       tags:
-        - distlist
+        - Creator
+      security:
+        - bearerAuth: [ ]
       responses:
         '200':
           description: A list of supported OS and Arch combinations
@@ -18,17 +25,20 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Dist'
+        default:
+            $ref: '#/components/responses/Error'
   /creator:
     post:
       summary: Create a new beacon.
       tags:
-        - creator
+        - Creator
+      security:
+        - bearerAuth: [ ]
       parameters:
             - $ref: '#/components/parameters/ReportAddr'
             - $ref: '#/components/parameters/OS'
             - $ref: '#/components/parameters/Arch'
-            - $ref: '#/components/parameters/BeaconId'
-            - $ref: '#/components/parameters/GroupId'
+            - $ref: '#/components/parameters/GroupUUID'
             - $ref: '#/components/parameters/Static'
             - $ref: '#/components/parameters/Upx'
             - $ref: '#/components/parameters/UpxLevel'
@@ -38,26 +48,18 @@ paths:
             - $ref: '#/components/parameters/Transport'
       requestBody:
         required: true
-        content:
-          application/octet-stream:
-            schema:
-              type: string
-              format: binary
+        $ref: '#/components/requestBodies/BinaryFile'
       responses:
         '200':
-          description: a beacon created from the submitted binary
-          content:
-            application/octet-stream:
-              schema:
-                type: string
-                format: binary
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
+          required: true
+          $ref: '#/components/responses/Beacon'
+        default:
+          $ref: '#/components/responses/Error'
   /healthz:
     get:
       summary: Check the health of the server.
       tags:
-        - healthz
+        - Health
       responses:
         '200':
           description: The server is healthy
@@ -74,6 +76,19 @@ paths:
           description: The server is not healthy
 
 components:
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  requestBodies:
+    BinaryFile:
+      description: A beacon
+      content:
+        application/octet-stream:
+          schema:
+            type: string
+            format: binary
   parameters:
     ReportAddr:
       name: report_addr
@@ -99,16 +114,8 @@ components:
       schema:
         type: string
         example: x86_64
-    BeaconId:
-      name: beacon_id
-      in: query
-      description: The UUID of the beacon.
-      schema:
-        type: string
-        format: uuid
-        example: "123e4567-e89b-12d3-a456-426655440000"
-    GroupId:
-      name: group_id
+    GroupUUID:
+      name: group_uuid
       in: query
       description: The UUID of the group.
       schema:
@@ -172,36 +179,19 @@ components:
         default: -s -w
         example: http
   responses:
-    ForbiddenError:
-      description: You are not authorized to access this resource
+    Error:
+      description: Error response
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              error:
-                type: string
-                default: Forbidden
-                example: Forbidden
-              message:
-                type: string
-                default: You are not authorized to access this resource
-                example: You are not authorized to access this resource
-    NotFoundError:
-      description: The requested resource was not found
+            $ref: '#/components/schemas/ErrorMsg'
+    Beacon:
+      description: A beacon
       content:
-        application/json:
+        application/octet-stream:
           schema:
-            type: object
-            properties:
-              error:
-                type: string
-                default: Not Found
-                example: Not Found
-              message:
-                type: string
-                default: The requested resource was not found
-                example: The requested resource was not found
+            type: string
+            format: binary
   schemas:
     Dist:
       type: object
@@ -212,3 +202,17 @@ components:
         arch:
           type: string
           example: x86_64
+    ErrorMsg:
+      type: object
+      properties:
+        code:
+          type: string
+          example: invalid_request
+          description: A unique error code for the specific type of error
+        message:
+          type: string
+          example: Invalid request parameters
+          description: A human-readable error message describing the error
+      required:
+        - code
+        - message

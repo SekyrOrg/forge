@@ -10,19 +10,19 @@ import (
 )
 
 type Args struct {
-	BeaconCreatorUrl string
-	FilePaths        []string
-	Verbose          bool
-	ConfigPath       string
-	OutputFolder     string
-	BeaconOpts       beaconOptions
+	CreatorUrl   string
+	FilePaths    []string
+	Verbose      bool
+	ConfigPath   string
+	OutputFolder string
+	BeaconOpts   beaconOptions
 }
 
 func ParseCLIArguments() *Args {
 	var args Args
 	flagSet := goflags.NewFlagSet()
-	flagSet.SetDescription(`BeaconForge is a tool for generating beacons from file paths.`)
-	flagSet.StringVarP(&args.BeaconCreatorUrl, "addr", "a", "http://127.0.0.1:9000", "Address of the beaconCreator server")
+	flagSet.SetDescription(`Forge is a tool for generating beacons from file paths.`)
+	flagSet.StringVarP(&args.CreatorUrl, "addr", "a", "http://127.0.0.1:9000", "Address of the beaconCreator server")
 	flagSet.StringSliceVarP((*goflags.StringSlice)(&args.FilePaths), "files", "f", []string{}, "File path for binaries to convert into beacon", goflags.StringSliceOptions)
 	flagSet.BoolVarP(&args.Verbose, "verbose", "v", false, "Enable verbose output")
 	flagSet.StringVarP(&args.OutputFolder, "output", "o", "", "Output folder for the beacons")
@@ -54,8 +54,8 @@ func ParseCLIArguments() *Args {
 }
 
 func mergeEnvironment(args Args) {
-	if apiAddr := os.Getenv("BEACON_CREATOR_ADDR"); apiAddr != "" {
-		args.BeaconCreatorUrl = apiAddr
+	if apiAddr := os.Getenv("CREATOR_ADDR"); apiAddr != "" {
+		args.CreatorUrl = apiAddr
 	}
 	if connectionString := os.Getenv("REPORT_ADDR"); connectionString != "" {
 		args.BeaconOpts.ReportAddr = connectionString
@@ -80,7 +80,6 @@ type beaconOptions struct {
 	ReportAddr string
 	Os         string
 	Arch       string
-	BeaconId   string
 	GroupId    string
 	Static     bool
 	Upx        bool
@@ -97,19 +96,12 @@ func (b *beaconOptions) toPostCreatorParams() *openapi.PostCreatorParams {
 		Os:         b.Os,
 		Arch:       b.Arch,
 	}
-	if b.BeaconId != "" {
-		beaconId, err := uuid.Parse(b.BeaconId)
-		if err != nil {
-			log.Fatal(err)
-		}
-		params.BeaconId = &beaconId
-	}
 	if b.GroupId != "" {
 		groupId, err := uuid.Parse(b.GroupId)
 		if err != nil {
 			log.Fatal(err)
 		}
-		params.GroupId = &groupId
+		params.GroupUuid = &groupId
 	}
 	if b.Static {
 		params.Static = &b.Static
