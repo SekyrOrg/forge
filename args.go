@@ -33,7 +33,7 @@ func ParseCLIArguments() *Args {
 		flagSet.StringVar(&args.BeaconOpts.Arch, "arch", runtime.GOARCH, "GOARCH for the beacon"),
 		flagSet.StringVar(&args.BeaconOpts.Os, "os", runtime.GOOS, "GOOS for the beacon"),
 		flagSet.StringVar(&args.BeaconOpts.Lldflags, "lldflags", "-s -w", "Lldflags for the beacon"),
-		flagSet.BoolVar(&args.BeaconOpts.Static, "static", false, "Static binary for the beacon"),
+		flagSet.BoolVar(&args.BeaconOpts.Static, "static", true, "Static binary for the beacon"),
 		flagSet.BoolVar(&args.BeaconOpts.Gzip, "gzip", true, "Gzip the beacon"),
 		flagSet.BoolVar(&args.BeaconOpts.Upx, "upx", false, "Upx the beacon"),
 		flagSet.IntVar(&args.BeaconOpts.UpxLevel, "upx-level", 1, "Upx level for the beacon"),
