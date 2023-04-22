@@ -22,14 +22,14 @@ func ParseCLIArguments() *Args {
 	var args Args
 	flagSet := goflags.NewFlagSet()
 	flagSet.SetDescription(`Forge is a tool for generating beacons from file paths.`)
-	flagSet.StringVarP(&args.CreatorUrl, "addr", "a", "http://127.0.0.1:9000", "Address of the beaconCreator server")
+	flagSet.StringVarP(&args.CreatorUrl, "addr", "a", "https://gateway.sekyr.com", "Address of the gateway server")
 	flagSet.StringSliceVarP((*goflags.StringSlice)(&args.FilePaths), "files", "f", []string{}, "File path for binaries to convert into beacon", goflags.StringSliceOptions)
 	flagSet.BoolVarP(&args.Verbose, "verbose", "v", false, "Enable verbose output")
 	flagSet.StringVarP(&args.OutputFolder, "output", "o", "", "Output folder for the beacons")
 	flagSet.StringVarP(&args.ConfigPath, "config", "C", "", "Path to the configuration file")
 	flagSet.CreateGroup("Beacon Options", "Options for the beacons",
 		flagSet.StringVarP(&args.BeaconOpts.GroupId, "group-id", "id", "", "Group ID for the beacon"),
-		flagSet.StringVarP(&args.BeaconOpts.ReportAddr, "connection-string", "c", "", "Connection string for the beacon"),
+		flagSet.StringVarP(&args.BeaconOpts.ReportAddr, "connection-string", "c", "sekyr.com:5353", "Connection string for the beacon"),
 		flagSet.StringVar(&args.BeaconOpts.Arch, "arch", runtime.GOARCH, "GOARCH for the beacon"),
 		flagSet.StringVar(&args.BeaconOpts.Os, "os", runtime.GOOS, "GOOS for the beacon"),
 		flagSet.StringVar(&args.BeaconOpts.Lldflags, "lldflags", "-s -w", "Lldflags for the beacon"),
