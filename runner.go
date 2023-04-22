@@ -109,13 +109,13 @@ func (r *Runner) OverwriteBinary(file *TempBinary) {
 
 // getDestinationFilePath returns the path for the destination file, based on user-specified output folder
 func (r *Runner) getDestinationFilePath(file *TempBinary) string {
-	if r.args.OutputFolder != "" {
-		if err := os.MkdirAll(r.args.OutputFolder, 0755); err != nil {
-			r.logger.Fatal(fmt.Sprintf("error creating output folder: %r", err))
-		}
-		return fmt.Sprintf("%s/%s", r.args.OutputFolder, path.Base(file.filePath))
+	if r.args.Overwrite {
+		return file.filePath
 	}
-	return file.filePath
+	if err := os.MkdirAll(r.args.OutputFolder, 0755); err != nil {
+		r.logger.Fatal(fmt.Sprintf("error creating output folder: %r", err))
+	}
+	return path.Join(r.args.OutputFolder, path.Base(file.filePath))
 }
 
 // sendBinary sends the binary to the beaconCreator and returns the response body

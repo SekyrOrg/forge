@@ -15,6 +15,7 @@ type Args struct {
 	Verbose      bool
 	ConfigPath   string
 	OutputFolder string
+	Overwrite    bool
 	BeaconOpts   beaconOptions
 }
 
@@ -25,7 +26,8 @@ func ParseCLIArguments() *Args {
 	flagSet.StringVarP(&args.CreatorUrl, "addr", "a", "https://gateway.sekyr.com", "Address of the gateway server")
 	flagSet.StringSliceVarP((*goflags.StringSlice)(&args.FilePaths), "files", "f", []string{}, "File path for binaries to convert into beacon", goflags.StringSliceOptions)
 	flagSet.BoolVarP(&args.Verbose, "verbose", "v", false, "Enable verbose output")
-	flagSet.StringVarP(&args.OutputFolder, "output", "o", "", "Output folder for the beacons")
+	flagSet.BoolVarP(&args.Overwrite, "overwrite", "w", false, "Overwrite the beacons, this overrides the output flag")
+	flagSet.StringVarP(&args.OutputFolder, "output", "o", "out", "Output folder for the beacons, if not provided beacons are overwritten")
 	flagSet.StringVarP(&args.ConfigPath, "config", "C", "", "Path to the configuration file")
 	flagSet.CreateGroup("Beacon Options", "Options for the beacons",
 		flagSet.StringVarP(&args.BeaconOpts.GroupId, "group-id", "id", "", "Group ID for the beacon"),
