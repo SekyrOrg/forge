@@ -14,9 +14,9 @@ builds:
       - darwin
 
 archives:
-  - files:
-      - configs/alpine.yaml
   - format: binary
+    files:
+      - configs/alpine.yaml
     name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
