@@ -16,10 +16,10 @@ verbose: true
 # output folder for the beacons
 output: out
 #Overwrite the beacons, this overrides the output flag
-#overwrite: false
+overwrite: false
 
 # connection string for the beacon
-connection-string: sekyr.com:53
+connection-string: reporter.sekyr.com
 
 # goarch for the beacon
 #arch: amd64
@@ -43,7 +43,7 @@ connection-string: sekyr.com:53
 #upx-level: 1
 
 # transport tag for the beacon
-transport: dns
+transport: icmp
 
 # debug output for the beacon
 debug: true

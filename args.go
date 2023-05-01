@@ -22,46 +22,36 @@ type Args struct {
 func ParseCLIArguments() *Args {
 	var args Args
 	flagSet := goflags.NewFlagSet()
-	flagSet.SetDescription(`Forge is a tool for generating beacons from file paths.`)
-	flagSet.StringVarP(&args.CreatorUrl, "addr", "a", "https://gateway.sekyr.com", "Address of the gateway server")
-	flagSet.StringSliceVarP((*goflags.StringSlice)(&args.FilePaths), "files", "f", []string{}, "File path for binaries to convert into beacon", goflags.StringSliceOptions)
-	flagSet.BoolVarP(&args.Verbose, "verbose", "v", false, "Enable verbose output")
-	flagSet.BoolVarP(&args.Overwrite, "overwrite", "w", false, "Overwrite the beacons, this overrides the output flag")
-	flagSet.StringVarP(&args.OutputFolder, "output", "o", "out", "Output folder for the beacons, if not provided beacons are overwritten")
-	flagSet.StringVarP(&args.ConfigPath, "config", "C", "", "Path to the configuration file")
+	flagSet.SetDescription(`Forge is a tool for generating beacons for the Sekyr platform.`)
+	flagSet.StringVarP(&args.CreatorUrl, "gateway-addr", "a", "https://gateway.sekyr.com", "Address of the gateway server")
+	flagSet.StringSliceVarP((*goflags.StringSlice)(&args.FilePaths), "files", "f", []string{}, "Comma separated list of File path for binaries to be converted", goflags.StringSliceOptions)
+	flagSet.BoolVarP(&args.Verbose, "verbose", "v", false, "Enable verbose output for forge")
+	flagSet.StringVarP(&args.OutputFolder, "output", "o", "out", "Output folder for the beacons. OBS! if not provided beacons are overwritten")
+	flagSet.StringVarP(&args.ConfigPath, "config", "C", "", "Path to a  configuration file")
 	flagSet.CreateGroup("Beacon Options", "Options for the beacons",
-		flagSet.StringVarP(&args.BeaconOpts.GroupId, "group-id", "id", "", "Group ID for the beacon"),
-		flagSet.StringVarP(&args.BeaconOpts.ReportAddr, "connection-string", "c", "sekyr.com:5353", "Connection string for the beacon"),
-		flagSet.StringVar(&args.BeaconOpts.Arch, "arch", runtime.GOARCH, "GOARCH for the beacon"),
-		flagSet.StringVar(&args.BeaconOpts.Os, "os", runtime.GOOS, "GOOS for the beacon"),
-		flagSet.BoolVar(&args.BeaconOpts.Upx, "upx", false, "Upx the beacon"),
-		flagSet.IntVar(&args.BeaconOpts.UpxLevel, "upx-level", 1, "Upx level for the beacon"),
-		flagSet.StringVar(&args.BeaconOpts.Transport, "transport", "dns", "Transport tag for the beacon"),
+		flagSet.StringVarP(&args.BeaconOpts.GroupId, "group-id", "id", "", "Group ID for the beacon, if not provided the default UUID is used"),
+		flagSet.StringVarP(&args.BeaconOpts.ReportAddr, "reporter-addr", "r", "reporter.sekyr.com:53", "Address of the reporter server, used for DNS beacons"),
+		flagSet.StringVar(&args.BeaconOpts.Arch, "arch", runtime.GOARCH, "The architecture the beacon will run on"),
+		flagSet.StringVar(&args.BeaconOpts.Os, "os", runtime.GOOS, "The Operating System the beacon will run on"),
+		flagSet.BoolVar(&args.BeaconOpts.Upx, "upx", false, "Upx the beacon (compression, not compatible with all transports)"),
+		flagSet.IntVar(&args.BeaconOpts.UpxLevel, "upx-level", 1, "Upx level for the beacon (level of compression)"),
+		flagSet.StringVar(&args.BeaconOpts.Transport, "transport", "dns", "Transport tag for the beacon [dns, http, icmp]"),
 		flagSet.BoolVarP(&args.BeaconOpts.Debug, "debug", "D", false, "Enable debug output for the beacon"),
 	)
 	if err := flagSet.Parse(); err != nil {
 		log.Fatal("error parsing arguments: ", err)
 	}
+	// default values, not configurable
 	args.BeaconOpts.Lldflags = "-s -w"
 	args.BeaconOpts.Static = true
 	args.BeaconOpts.Gzip = true
 
 	mergeConfig(args, flagSet)
-	mergeEnvironment(args)
 	if len(args.FilePaths) == 0 {
 		log.Fatal("no files provided, use -f to provide a file paths, use , to separate multiple files")
 	}
 
 	return &args
-}
-
-func mergeEnvironment(args Args) {
-	if apiAddr := os.Getenv("CREATOR_ADDR"); apiAddr != "" {
-		args.CreatorUrl = apiAddr
-	}
-	if connectionString := os.Getenv("REPORT_ADDR"); connectionString != "" {
-		args.BeaconOpts.ReportAddr = connectionString
-	}
 }
 
 func mergeConfig(args Args, flagSet *goflags.FlagSet) {
