@@ -25,9 +25,9 @@ func TestRunner_sendBinary(t *testing.T) {
 	t.Run("Runner_sendBinary works", func(t *testing.T) {
 		runner := Runner{logger: logger, args: &Args{CreatorUrl: testServer.URL}}
 		testFile := createAndWriteTempFile(t, "test")
-		defer os.Remove(testFile)
+		defer os.Remove(testFile.Name())
 
-		r, err := runner.sendBinary(testFile)
+		r, err := runner.sendBinary(testFile.Name())
 		assert.NoError(t, err)
 		assert.NotNil(t, r)
 		content, err := io.ReadAll(r)
@@ -49,27 +49,28 @@ func TestRunner_CreateBinary(t *testing.T) {
 	t.Run("Runner_CreateBinary works", func(t *testing.T) {
 		runner := Runner{logger: logger, args: &Args{CreatorUrl: testServer.URL}}
 		testFile := createAndWriteTempFile(t, "test")
-		defer os.Remove(testFile)
-
-		binary, err := runner.CreateBinary(&testFile)
+		defer os.Remove(testFile.Name())
+		filename := testFile.Name()
+		binary, err := runner.CreateBinary(&filename)
 		assert.NoError(t, err, "error should be nil")
 		assert.NotNil(t, binary, "binary should not be nil")
-		assert.NotEmpty(t, binary.filePath, "filePath should be set")
-		assert.Equal(t, binary.filePath, testFile, "filePath should be set to testFile")
+		assert.NotEmpty(t, binary.originalFilePath, "originalFilePath should be set")
+		assert.Equal(t, binary.originalFilePath, testFile, "originalFilePath should be set to testFile")
 		assert.NotEmpty(t, binary.tempFilePath, "tempFilePath should be set")
-		assert.FileExistsf(t, binary.tempFilePath, "tempFilePath should be a file")
+		assert.NotNil(t, binary.tempFilePath, "tempFile should not be nil")
 
 	})
 	t.Run("Runner_CreateBinary tempfile contains the content sent from testServer", func(t *testing.T) {
 		runner := Runner{logger: logger, args: &Args{CreatorUrl: testServer.URL}}
 		testFile := createAndWriteTempFile(t, "test")
-		defer os.Remove(testFile)
+		defer os.Remove(testFile.Name())
+		filename := testFile.Name()
 
-		binary, err := runner.CreateBinary(&testFile)
+		binary, err := runner.CreateBinary(&filename)
 		assert.NoError(t, err, "error should be nil")
 		assert.NotNil(t, binary, "binary should not be nil")
-		assert.FileExists(t, binary.tempFilePath, "tempFilePath should be a file")
-		tempFileContend, err := os.ReadFile(binary.tempFilePath)
+		assert.NotNil(t, binary.tempFilePath, "tempFile should not be nil")
+		tempFileContend, err := io.ReadAll(binary.tempFilePath)
 		assert.NoError(t, err, "error should be nil")
 		assert.Equal(t, tempFileContend, []byte("test"), "content of temp file should be content returned by testServer")
 	})
@@ -83,18 +84,18 @@ func TestRunner_OverwriteBinary(t *testing.T) {
 		runner := Runner{logger: logger, args: &Args{}}
 		// create temp file
 		tempFile := createAndWriteTempFile(t, "temp")
-		defer os.Remove(tempFile)
+		defer os.Remove(tempFile.Name())
 		destinationFile := createAndWriteTempFile(t, "destination")
-		defer os.Remove(destinationFile)
+		defer os.Remove(destinationFile.Name())
 
 		tempBinary := &TempBinary{
-			filePath:     destinationFile,
-			tempFilePath: tempFile,
+			originalFilePath: destinationFile.Name(),
+			tempFilePath:     tempFile,
 		}
-		runner.OverwriteBinary(tempBinary)
-		tempFileContend, err := os.ReadFile(tempFile)
+		runner.OverwriteBinary(&tempBinary)
+		tempFileContend, err := io.ReadAll(tempFile)
 		assert.NoError(t, err, "error should be nil")
-		destinationFileContend, err := os.ReadFile(destinationFile)
+		destinationFileContend, err := io.ReadAll(destinationFile)
 		assert.NoError(t, err, "error should be nil")
 		assert.Equal(t, tempFileContend, destinationFileContend, "tempFile and destinationFile should be equal")
 	})
@@ -107,19 +108,19 @@ func TestRunner_OverwriteBinary(t *testing.T) {
 		// create temp file
 
 		tempFile := createAndWriteTempFile(t, "temp")
-		defer os.Remove(tempFile)
+		defer os.Remove(tempFile.Name())
 		destinationFile := createAndWriteTempFile(t, "destination")
-		defer os.Remove(destinationFile)
+		defer os.Remove(destinationFile.Name())
 
 		tempBinary := &TempBinary{
-			filePath:     destinationFile,
-			tempFilePath: tempFile,
+			originalFilePath: destinationFile.Name(),
+			tempFilePath:     tempFile,
 		}
-		runner.OverwriteBinary(tempBinary)
+		runner.OverwriteBinary(&tempBinary)
 
-		tempFileContend, err := os.ReadFile(tempFile)
+		tempFileContend, err := io.ReadAll(tempFile)
 		assert.NoError(t, err, "error should be nil")
-		outDirDestinationPath := filepath.Join(outdir, filepath.Base(destinationFile))
+		outDirDestinationPath := filepath.Join(outdir, filepath.Base(destinationFile.Name()))
 		outDirDestinationFileContend, err := os.ReadFile(outDirDestinationPath)
 		assert.NoError(t, err, "error should be nil")
 		assert.Equal(t, tempFileContend, outDirDestinationFileContend, "tempFile and outDirDestinationFile should be equal")
@@ -131,32 +132,32 @@ func TestRunner_OverwriteBinary(t *testing.T) {
 		runner := Runner{logger: logger, args: &Args{OutputFolder: outdir}}
 		// create temp file
 		tempFile := createAndWriteTempFile(t, "temp")
-		defer os.Remove(tempFile)
+		defer os.Remove(tempFile.Name())
 		destinationFile := createAndWriteTempFile(t, "destination")
-		defer os.Remove(destinationFile)
+		defer os.Remove(destinationFile.Name())
 
 		tempBinary := &TempBinary{
-			filePath:     destinationFile,
-			tempFilePath: tempFile,
+			originalFilePath: destinationFile.Name(),
+			tempFilePath:     tempFile,
 		}
-		runner.OverwriteBinary(tempBinary)
+		runner.OverwriteBinary(&tempBinary)
 
-		tempFileContend, err := os.ReadFile(tempFile)
+		tempFileContend, err := io.ReadAll(tempFile)
 		assert.NoError(t, err, "error should be nil")
-		destinationFileContend, err := os.ReadFile(destinationFile)
+		destinationFileContend, err := io.ReadAll(destinationFile)
 		assert.NoError(t, err, "error should be nil")
 		assert.NotEqual(t, tempFileContend, destinationFileContend, "tempFile and destinationFile should be equal")
 	})
 }
 
-func createAndWriteTempFile(t *testing.T, nameAndContent string) string {
+func createAndWriteTempFile(t *testing.T, nameAndContent string) *os.File {
 	t.Helper()
 	tempFile, err := os.CreateTemp(os.TempDir(), nameAndContent)
 	assert.NoError(t, err, "error should be nil")
 	defer tempFile.Close()
 	_, err = tempFile.Write([]byte(nameAndContent))
 	assert.NoError(t, err, "error should be nil")
-	return tempFile.Name()
+	return tempFile
 }
 
 func TestRunner_Run(t *testing.T) {
@@ -170,19 +171,19 @@ func TestRunner_Run(t *testing.T) {
 	assert.NoError(t, err)
 	t.Run("Runner_Run creates binary from path and overwrites it", func(t *testing.T) {
 		tempFile1 := createAndWriteTempFile(t, "temp1")
-		defer os.Remove(tempFile1)
+		defer os.Remove(tempFile1.Name())
 		tempFile2 := createAndWriteTempFile(t, "temp2")
-		defer os.Remove(tempFile2)
-		runner := Runner{logger: logger, args: &Args{CreatorUrl: testServer.URL, FilePaths: []string{tempFile1, tempFile2}}}
+		defer os.Remove(tempFile2.Name())
+		runner := Runner{logger: logger, args: &Args{CreatorUrl: testServer.URL, FilePaths: []string{tempFile1.Name(), tempFile2.Name()}}}
 		err := runner.Run()
 		assert.NoError(t, err, "error should be nil")
-		assert.FileExists(t, tempFile1, "tempFile1 should be a file")
-		assert.FileExists(t, tempFile2, "tempFile2 should be a file")
-		tempFile1Content, err := os.ReadFile(tempFile1)
+		assert.NotNil(t, tempFile1, "tempFile1 should not be nil")
+		assert.NotNil(t, tempFile2, "tempFile2 should not be nil")
+		tempFile1Content, err := io.ReadAll(tempFile1)
 		assert.NoError(t, err, "error should be nil")
 		assert.Equal(t, tempFile1Content, []byte("test"), "content of tempFile1 should be content returned by testServer")
 
-		tempFile2Content, err := os.ReadFile(tempFile2)
+		tempFile2Content, err := io.ReadAll(tempFile2)
 		assert.NoError(t, err, "error should be nil")
 		assert.Equal(t, tempFile2Content, []byte("test"), "content of tempFile2 should be content returned by testServer")
 	})

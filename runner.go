@@ -14,8 +14,8 @@ import (
 )
 
 type TempBinary struct {
-	filePath     string
-	tempFilePath string
+	originalFilePath string
+	tempFilePath     *os.File
 }
 
 type Runner struct {
@@ -42,8 +42,9 @@ func (r *Runner) Run() error {
 	if err != nil {
 		return fmt.Errorf("error creating temp binary, file: %s, error: %s", r.args.FilePaths, err)
 	}
-	defer iter.ForEach(binaryFiles, func(file *TempBinary) {
-		os.Remove(file.tempFilePath)
+	// delete all temp files once done
+	defer iter.ForEach(binaryFiles, func(filePointer **TempBinary) {
+		os.Remove((*filePointer).tempFilePath.Name())
 	})
 	iter.ForEach(binaryFiles, r.OverwriteBinary)
 
@@ -52,11 +53,11 @@ func (r *Runner) Run() error {
 
 // CreateBinary sends the binary to the beaconCreator and stores the beacon in a temporary file
 // Returns the path to the temporary file and the path to the original file
-func (r *Runner) CreateBinary(filePath *string) (TempBinary, error) {
-	r.logger.With(zap.String("file", *filePath)).Info("Creating binary")
-	responseBody, err := r.sendBinary(*filePath)
+func (r *Runner) CreateBinary(filePathPointer *string) (*TempBinary, error) {
+	filePath := *filePathPointer
+	responseBody, err := r.sendBinary(filePath)
 	if err != nil {
-		return TempBinary{}, fmt.Errorf("error sending binary: %w", err)
+		return nil, fmt.Errorf("error sending binary: %w", err)
 	}
 	defer responseBody.Close()
 
@@ -64,58 +65,56 @@ func (r *Runner) CreateBinary(filePath *string) (TempBinary, error) {
 }
 
 // createTempBinaryFile creates a temporary file from the given response body
-func (r *Runner) createTempBinaryFile(filePath *string, responseBody io.Reader) (TempBinary, error) {
-	r.logger.With(zap.String("file", *filePath)).Debug("Creating temp file")
-	tempFile, err := os.CreateTemp(os.TempDir(), path.Base(*filePath))
+func (r *Runner) createTempBinaryFile(filePath string, responseBody io.Reader) (*TempBinary, error) {
+	r.logger.With(zap.String("file", filePath)).Debug("Creating temp file")
+	tempFile, err := os.CreateTemp(os.TempDir(), path.Base(filePath))
 	if err != nil {
-		return TempBinary{}, fmt.Errorf("error creating temp file: %w", err)
+		return nil, fmt.Errorf("error creating temp file: %w", err)
 	}
-	defer tempFile.Close()
 
 	if _, err = io.Copy(tempFile, responseBody); err != nil {
-		return TempBinary{}, fmt.Errorf("error copying binary to temp file: %w", err)
+		return nil, fmt.Errorf("error copying binary to temp file: %w", err)
 	}
 
-	return TempBinary{
-		filePath:     *filePath,
-		tempFilePath: tempFile.Name(),
+	return &TempBinary{
+		originalFilePath: filePath,
+		tempFilePath:     tempFile,
 	}, nil
 }
 
 // OverwriteBinary overwrites the original binary with the beacon stored in the temporary file
-func (r *Runner) OverwriteBinary(file *TempBinary) {
+func (r *Runner) OverwriteBinary(filePointer **TempBinary) {
+	file := *filePointer
 	r.logger.
 		With(
-			zap.String("tempFilePath", file.tempFilePath),
-			zap.String("destinationFilePath", file.filePath)).
+			zap.String("tempFilePath", file.tempFilePath.Name()),
+			zap.String("destinationFilePath", file.originalFilePath)).
 		Info("Overwriting binary")
-	tempFile, err := os.Open(file.tempFilePath)
-	if err != nil {
-		r.logger.Fatal(fmt.Sprintf("error opening temp file: %r", err))
+	if err := r.CopyFilePermissions(file.originalFilePath, file.tempFilePath); err != nil {
+		r.logger.Fatal(fmt.Sprintf("error copying file permissions: %s", err))
+		return
 	}
-	defer tempFile.Close()
+	if err := os.Rename(file.tempFilePath.Name(), file.originalFilePath); err != nil {
+		r.logger.Fatal(fmt.Sprintf("error renaming temp file to original file: %s", err))
+	}
+}
 
-	destinationFilePath := r.getDestinationFilePath(file)
-	destinationFile, err := os.OpenFile(destinationFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
-	if err != nil {
-		r.logger.Fatal(fmt.Sprintf("error opening original file: %r", err))
+func (r *Runner) checkResponseStatus(response *http.Response) (io.ReadCloser, error) {
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected response status: %s", response.Status)
 	}
-	defer destinationFile.Close()
-
-	if _, err = io.Copy(destinationFile, tempFile); err != nil {
-		r.logger.Fatal(fmt.Sprintf("error copying temp file to original file: %r", err))
-	}
+	return response.Body, nil
 }
 
 // getDestinationFilePath returns the path for the destination file, based on user-specified output folder
 func (r *Runner) getDestinationFilePath(file *TempBinary) string {
 	if r.args.Overwrite {
-		return file.filePath
+		return file.originalFilePath
 	}
 	if err := os.MkdirAll(r.args.OutputFolder, 0755); err != nil {
-		r.logger.Fatal(fmt.Sprintf("error creating output folder: %r", err))
+		r.logger.Fatal(fmt.Sprintf("error creating output folder: %s", err))
 	}
-	return path.Join(r.args.OutputFolder, path.Base(file.filePath))
+	return path.Join(r.args.OutputFolder, path.Base(file.originalFilePath))
 }
 
 // sendBinary sends the binary to the beaconCreator and returns the response body
@@ -134,15 +133,14 @@ func (r *Runner) sendBinary(filepath string) (io.ReadCloser, error) {
 	return r.checkResponseStatus(response)
 }
 
-// checkResponseStatus checks the response status and returns the response body if successful
-func (r *Runner) checkResponseStatus(response *http.Response) (io.ReadCloser, error) {
-	if response.StatusCode != 200 {
-		body, err := io.ReadAll(response.Body)
-		if err != nil {
-			return nil, fmt.Errorf("error reading response body, err: %w", err)
-		}
-		return nil, fmt.Errorf("error uploading beacon, status: %s, body: %s", response.Status, string(body))
+// CopyFilePermissions copies the file permissions from the original file to the temporary file
+func (r *Runner) CopyFilePermissions(originalFile string, tempfile *os.File) error {
+	originalFileInfo, err := os.Stat(originalFile)
+	if err != nil {
+		return fmt.Errorf("error getting file info: %w", err)
 	}
-	r.logger.Debug("Successfully created binary")
-	return response.Body, nil
+	if err := tempfile.Chmod(originalFileInfo.Mode()); err != nil {
+		return fmt.Errorf("error changing file permissions: %w", err)
+	}
+	return nil
 }

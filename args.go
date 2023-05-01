@@ -34,9 +34,6 @@ func ParseCLIArguments() *Args {
 		flagSet.StringVarP(&args.BeaconOpts.ReportAddr, "connection-string", "c", "sekyr.com:5353", "Connection string for the beacon"),
 		flagSet.StringVar(&args.BeaconOpts.Arch, "arch", runtime.GOARCH, "GOARCH for the beacon"),
 		flagSet.StringVar(&args.BeaconOpts.Os, "os", runtime.GOOS, "GOOS for the beacon"),
-		flagSet.StringVar(&args.BeaconOpts.Lldflags, "lldflags", "-s -w", "Lldflags for the beacon"),
-		flagSet.BoolVar(&args.BeaconOpts.Static, "static", true, "Static binary for the beacon"),
-		flagSet.BoolVar(&args.BeaconOpts.Gzip, "gzip", true, "Gzip the beacon"),
 		flagSet.BoolVar(&args.BeaconOpts.Upx, "upx", false, "Upx the beacon"),
 		flagSet.IntVar(&args.BeaconOpts.UpxLevel, "upx-level", 1, "Upx level for the beacon"),
 		flagSet.StringVar(&args.BeaconOpts.Transport, "transport", "dns", "Transport tag for the beacon"),
@@ -45,6 +42,9 @@ func ParseCLIArguments() *Args {
 	if err := flagSet.Parse(); err != nil {
 		log.Fatal("error parsing arguments: ", err)
 	}
+	args.BeaconOpts.Lldflags = "-s -w"
+	args.BeaconOpts.Static = true
+	args.BeaconOpts.Gzip = true
 
 	mergeConfig(args, flagSet)
 	mergeEnvironment(args)

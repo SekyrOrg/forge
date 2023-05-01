@@ -5,9 +5,12 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
+	"runtime"
 )
 
 func main() {
+	numCPUs := runtime.NumCPU()
+	runtime.GOMAXPROCS(numCPUs * 2)
 	logger := CreateZapLogger()
 	defer logger.Sync()
 

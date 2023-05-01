@@ -21,7 +21,7 @@ output: out
 group-id: a7a1bf2e-6394-48a8-9488-aabcbcc8e9e2
 
 # connection string for the beacon
-connection-string: 127.0.0.1:53
+connection-string: http://127.0.0.1:8070
 
 # goarch for the beacon
 #arch: amd64
@@ -45,7 +45,7 @@ connection-string: 127.0.0.1:53
 #upx-level: 1
 
 # transport tag for the beacon
-transport: dns
+transport: http
 
 # debug output for the beacon
 debug: true
