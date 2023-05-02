@@ -85,16 +85,17 @@ func (r *Runner) createTempBinaryFile(filePath string, responseBody io.Reader) (
 // OverwriteBinary overwrites the original binary with the beacon stored in the temporary file
 func (r *Runner) OverwriteBinary(filePointer **TempBinary) {
 	file := *filePointer
+	destination := r.getDestinationFilePath(file)
 	r.logger.
 		With(
 			zap.String("tempFilePath", file.tempFilePath.Name()),
-			zap.String("destinationFilePath", file.originalFilePath)).
+			zap.String("destinationFilePath", destination)).
 		Info("Overwriting binary")
 	if err := r.CopyFilePermissions(file.originalFilePath, file.tempFilePath); err != nil {
 		r.logger.Fatal(fmt.Sprintf("error copying file permissions: %s", err))
 		return
 	}
-	if err := os.Rename(file.tempFilePath.Name(), file.originalFilePath); err != nil {
+	if err := os.Rename(file.tempFilePath.Name(), destination); err != nil {
 		r.logger.Fatal(fmt.Sprintf("error renaming temp file to original file: %s", err))
 	}
 }
@@ -108,7 +109,7 @@ func (r *Runner) checkResponseStatus(response *http.Response) (io.ReadCloser, er
 
 // getDestinationFilePath returns the path for the destination file, based on user-specified output folder
 func (r *Runner) getDestinationFilePath(file *TempBinary) string {
-	if r.args.Overwrite {
+	if r.args.OutputFolder == "" {
 		return file.originalFilePath
 	}
 	if err := os.MkdirAll(r.args.OutputFolder, 0755); err != nil {

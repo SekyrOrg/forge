@@ -8,18 +8,16 @@ addr: https://gateway.sekyr.com
 
 # file path for binaries to convert into beacon
 #files: ["./testFiles/ls_darwin","./testFiles/ls_darwin1","./testFiles/ls_darwin2","./testFiles/ls_darwin3"]
-files: ["./testFiles/ls_darwin"]
+files: ["./testFiles/id"]
 
 # enable verbose output for forge
 verbose: true
 
 # output folder for the beacons
 output: out
-#Overwrite the beacons, this overrides the output flag
-overwrite: false
 
 # connection string for the beacon
-connection-string: reporter.sekyr.com
+reporter-addr: http://reporter.sekyr.com:8070
 
 # goarch for the beacon
 #arch: amd64
@@ -43,7 +41,7 @@ connection-string: reporter.sekyr.com
 #upx-level: 1
 
 # transport tag for the beacon
-transport: icmp
+transport: http
 
 # debug output for the beacon
 debug: true

@@ -15,7 +15,6 @@ type Args struct {
 	Verbose      bool
 	ConfigPath   string
 	OutputFolder string
-	Overwrite    bool
 	BeaconOpts   beaconOptions
 }
 

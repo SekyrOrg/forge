@@ -1,0 +1,47 @@
+# Forge config file
+
+# group id for the beacon
+group-id: a7a1bf2e-6394-48a8-9488-aabcbcc8e9e2
+
+# address of the gateway server
+addr: https://gateway.sekyr.com
+
+# file path for binaries to convert into beacon
+#files: ["./testFiles/ls_darwin","./testFiles/ls_darwin1","./testFiles/ls_darwin2","./testFiles/ls_darwin3"]
+files: ["./testFiles/ls_darwin"]
+
+# enable verbose output for forge
+verbose: true
+
+# output folder for the beacons
+output: out
+
+# connection string for the beacon
+reporter-addr: reporter.sekyr.com
+
+# goarch for the beacon
+#arch: amd64
+
+# goos for the beacon
+#os: darwin
+
+# lldflags for the beacon
+#lldflags: -s -w
+
+# static binary for the beacon
+#static: false
+
+# gzip the beacon
+#gzip: true
+
+# upx the beacon
+#upx: false
+
+# upx level for the beacon
+#upx-level: 1
+
+# transport tag for the beacon
+transport: icmp
+
+# debug output for the beacon
+debug: true
