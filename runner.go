@@ -9,8 +9,8 @@ import (
 	"io"
 	"net/http"
 	"os"
-
 	"path"
+	"path/filepath"
 )
 
 type TempBinary struct {
@@ -67,9 +67,10 @@ func (r *Runner) CreateBinary(filePathPointer *string) (*TempBinary, error) {
 // createTempBinaryFile creates a temporary file from the given response body
 func (r *Runner) createTempBinaryFile(filePath string, responseBody io.Reader) (*TempBinary, error) {
 	r.logger.With(zap.String("file", filePath)).Debug("Creating temp file")
-	tempFile, err := os.CreateTemp(os.TempDir(), path.Base(filePath))
+	tempDir := os.TempDir()
+	tempFile, err := os.CreateTemp(tempDir, filepath.Base(filePath))
 	if err != nil {
-		return nil, fmt.Errorf("error creating temp file: %w", err)
+		return nil, fmt.Errorf("error creating temp file, tempdir: %s, file: %s, err:  %w", tempDir, path.Base(filePath), err)
 	}
 
 	if _, err = io.Copy(tempFile, responseBody); err != nil {
@@ -115,7 +116,7 @@ func (r *Runner) getDestinationFilePath(file *TempBinary) string {
 	if err := os.MkdirAll(r.args.OutputFolder, 0755); err != nil {
 		r.logger.Fatal(fmt.Sprintf("error creating output folder: %s", err))
 	}
-	return path.Join(r.args.OutputFolder, path.Base(file.originalFilePath))
+	return filepath.Join(r.args.OutputFolder, filepath.Base(file.originalFilePath))
 }
 
 // sendBinary sends the binary to the beaconCreator and returns the response body
