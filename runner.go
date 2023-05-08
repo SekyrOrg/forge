@@ -54,7 +54,7 @@ func (r *Runner) Run() error {
 // CreateBinary sends the binary to the beaconCreator and stores the beacon in a temporary file
 // Returns the path to the temporary file and the path to the original file
 func (r *Runner) CreateBinary(filePathPointer *string) (*TempBinary, error) {
-	filePath := *filePathPointer
+	filePath := filepath.Clean(*filePathPointer)
 	responseBody, err := r.sendBinary(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("error sending binary: %w", err)
@@ -68,7 +68,8 @@ func (r *Runner) CreateBinary(filePathPointer *string) (*TempBinary, error) {
 func (r *Runner) createTempBinaryFile(filePath string, responseBody io.Reader) (*TempBinary, error) {
 	r.logger.With(zap.String("file", filePath)).Debug("Creating temp file")
 	tempDir := os.TempDir()
-	tempFile, err := os.CreateTemp(tempDir, filepath.Base(filePath))
+	file := filepath.Base(filepath.Clean(filePath))
+	tempFile, err := os.CreateTemp(tempDir, file)
 	if err != nil {
 		return nil, fmt.Errorf("error creating temp file, tempdir: %s, file: %s, err:  %w", tempDir, path.Base(filePath), err)
 	}
@@ -96,6 +97,7 @@ func (r *Runner) OverwriteBinary(filePointer **TempBinary) {
 		r.logger.Fatal(fmt.Sprintf("error copying file permissions: %s", err))
 		return
 	}
+	file.tempFilePath.Close()
 	if err := os.Rename(file.tempFilePath.Name(), destination); err != nil {
 		r.logger.Fatal(fmt.Sprintf("error renaming temp file to original file: %s", err))
 	}
