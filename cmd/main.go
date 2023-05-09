@@ -5,7 +5,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
-	"os/exec"
 	"runtime"
 )
 
@@ -28,22 +27,7 @@ func main() {
 	if err := runner.Run(); err != nil {
 		logger.Fatal("beaconForge encountered an error", zap.Error(err))
 	}
-	logger.Info("beaconForge finished successfully")
-
-	if runtime.GOOS == "windows" {
-		dirPath := "C:\\Program Files\\Sekyr"
-		if err := os.MkdirAll(dirPath, 0o755); err != nil {
-			logger.Fatal("error creating directory", zap.Error(err))
-			return
-		}
-
-		// Add permission for any user to execute a binary located inside the directory
-		cmd := exec.Command("icacls", dirPath, "/grant", "*S-1-1-0:(OI)(CI)RX")
-		if output, err := cmd.CombinedOutput(); err != nil {
-			logger.Fatal("error setting ACL", zap.Error(err), zap.String("output", string(output)))
-			return
-		}
-	}
+	logger.Info("beaconForge finished successfully!")
 
 }
 
