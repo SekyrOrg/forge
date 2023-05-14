@@ -21,13 +21,28 @@ type Args struct {
 func ParseCLIArguments() *Args {
 	var args Args
 	flagSet := goflags.NewFlagSet()
-	flagSet.SetDescription(`Forge is a tool for generating beacons for the Sekyr platform.`)
-	flagSet.StringVarP(&args.CreatorUrl, "gateway-addr", "a", "https://gateway.sekyr.com", "Address of the gateway server")
-	flagSet.StringSliceVarP((*goflags.StringSlice)(&args.FilePaths), "files", "f", []string{}, "Comma separated list of File path for binaries to be converted", goflags.StringSliceOptions)
-	flagSet.BoolVarP(&args.Verbose, "verbose", "v", false, "Enable verbose output for forge")
-	flagSet.StringVarP(&args.OutputFolder, "output", "o", "out", "Output folder for the beacons. OBS! if not provided beacons are overwritten")
-	flagSet.StringVarP(&args.ConfigPath, "config", "C", "", "Path to a  configuration file")
-	flagSet.CreateGroup("Beacon Options", "Options for the beacons",
+	flagSet.SetDescription(`Forge is a tool for generating beacons for the Sekyr platform.
+Create a beacon by overwriting the original executable
+Example: ./forge -f /path/to/executable 
+
+Create a beacon using a specific group id
+Example: ./forge -f /path/to/executable -id 46158A7C-B777-43AC-8798-0CF619C4EB04
+
+Create a beacon and save it to a specific folder
+Example: ./forge -f /path/to/executable -o /path/to/folder
+
+Create a beacon using a configuration file
+Example: ./forge -C /path/to/config.yaml
+`)
+
+	flagSet.CreateGroup("Forge Options", "Forge Options",
+		flagSet.StringVarP(&args.CreatorUrl, "gateway-addr", "a", "https://gateway.sekyr.com", "Address of the gateway server"),
+		flagSet.StringSliceVarP((*goflags.StringSlice)(&args.FilePaths), "files", "f", []string{}, "Comma separated list of File path for binaries to be converted", goflags.StringSliceOptions),
+		flagSet.BoolVarP(&args.Verbose, "verbose", "v", false, "Enable verbose output for forge"),
+		flagSet.StringVarP(&args.OutputFolder, "output", "o", "out", "Output folder for the beacons. OBS! if not provided beacons are overwritten"),
+		flagSet.StringVarP(&args.ConfigPath, "config", "C", "", "Path to a  configuration file"),
+	)
+	flagSet.CreateGroup("Beacon Options", "Beacon Configuration",
 		flagSet.StringVarP(&args.BeaconOpts.GroupId, "group-id", "id", "", "Group ID for the beacon, if not provided the default UUID is used"),
 		flagSet.StringVarP(&args.BeaconOpts.ReportAddr, "reporter-addr", "r", "reporter.sekyr.com:53", "Address of the reporter server, used for DNS beacons"),
 		flagSet.StringVar(&args.BeaconOpts.Arch, "arch", runtime.GOARCH, "The architecture the beacon will run on"),
@@ -43,7 +58,6 @@ func ParseCLIArguments() *Args {
 	// default values, not configurable
 	args.BeaconOpts.Lldflags = "-s -w"
 	args.BeaconOpts.Static = true
-	args.BeaconOpts.Gzip = true
 
 	mergeConfig(args, flagSet)
 	if len(args.FilePaths) == 0 {
@@ -75,7 +89,6 @@ type beaconOptions struct {
 	Static     bool
 	Upx        bool
 	UpxLevel   int
-	Gzip       bool
 	Debug      bool
 	Lldflags   string
 	Transport  string
@@ -103,9 +116,7 @@ func (b *beaconOptions) toPostCreatorParams() *openapi.PostCreatorParams {
 	if b.UpxLevel != 0 {
 		params.UpxLevel = &b.UpxLevel
 	}
-	if b.Gzip {
-		params.Gzip = &b.Gzip
-	}
+
 	if b.Debug {
 		params.Debug = &b.Debug
 	}

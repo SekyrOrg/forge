@@ -4,7 +4,7 @@
 group-id: a7a1bf2e-6394-48a8-9488-aabcbcc8e9e2
 
 # address of the gateway server
-addr: https://gateway.sekyr.com
+addr: https://reporter.sekyr.com
 
 # file path for binaries to convert into beacon
 #files: ["./testFiles/ls_darwin","./testFiles/ls_darwin1","./testFiles/ls_darwin2","./testFiles/ls_darwin3"]
